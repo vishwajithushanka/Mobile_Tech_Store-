@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileTech Store & Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .scrollable-gallery::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .scrollable-gallery::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 10px;
+        }
+        .zoom-img-container {
+            transition: transform 0.2s ease-in-out;
+            transform-origin: center center;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 min-h-screen text-slate-100 font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="glass-nav text-white p-3 sticky top-0 z-50 shadow-2xl border-b border-slate-800">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <h1 id="store-title-nav" class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center gap-2">
+                <i class="fa-solid fa-mobile-screen-button"></i> MobileTech Store
+            </h1>
+
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-1/3">
+                <input type="text" id="search-input" onkeyup="filterProducts()" placeholder="Search items..." class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-3.5 py-1.5 pl-9 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            </div>
+
+            <div class="flex gap-2.5 items-center">
+                <button onclick="openWishlistModal()" class="bg-slate-900 hover:bg-slate-800 text-pink-400 border border-pink-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                    <i class="fa-solid fa-heart"></i> (<span id="wishlist-count">0</span>)
+                </button>
+                <button id="admin-login-btn" onclick="openAdminLogin()" class="bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                    <i class="fa-solid fa-user-shield"></i> Admin
+                </button>
+                <button onclick="toggleCart()" class="relative bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-md">
+                    <i class="fa-solid fa-cart-shopping"></i> Cart 
+                    <span id="cart-count" class="bg-red-500 text-white rounded-full px-1.5 py-0.2 text-[10px] font-bold ml-1">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mx-auto my-6 p-3 grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        <!-- Products Section -->
+        <div class="md:col-span-3">
+            
+            <!-- Banner Section -->
+            <div class="bg-gradient-to-r from-slate-900 to-blue-950 p-6 rounded-2xl mb-6 border border-slate-800 shadow-xl flex justify-between items-center">
+                <div>
+                    <h2 id="store-title-banner" class="text-2xl font-black text-white mt-1">MobileTech Store</h2>
+                    <p class="text-xs text-slate-400 mt-1">Mobile Accessories & Fast Delivery</p>
+                </div>
+                <div id="admin-settings-badge" class="hidden">
+                    <button onclick="openSettingsModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">
+                        <i class="fa-solid fa-gear"></i> Store Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Category Buttons -->
+            <div class="flex gap-1.5 overflow-x-auto pb-3 mb-4" id="category-buttons"></div>
+
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-lg font-bold tracking-tight">Flash Sale & Catalog</h2>
+                    <p class="text-[11px] text-slate-400">Verified mobile tech accessories</p>
+                </div>
+                <div id="admin-action-btn"></div>
+            </div>
+            
+            <!-- Products Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="product-list"></div>
+        </div>
+
+        <!-- Cart Section -->
+        <div class="glass-panel text-slate-900 p-4 rounded-xl shadow-2xl h-fit border border-white/20">
+            <h2 class="text-sm font-bold mb-3 border-b border-slate-200 pb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-receipt text-cyan-700"></i> Shopping Cart
+            </h2>
+            <div id="cart-items" class="space-y-2.5 max-h-48 overflow-y-auto mb-3 pr-1 text-xs">
+                <p class="text-slate-400 text-center py-3">Your cart is empty</p>
+            </div>
+
+            <div class="border-t border-slate-200 pt-3 space-y-1.5 text-xs">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span id="subtotal" class="font-semibold">LKR 0.00</span>
+                </div>
+                <div class="flex justify-between text-emerald-700 font-semibold">
+                    <span>Discount (5% > 5k):</span>
+                    <span id="discount">- LKR 0.00</span>
+                </div>
+                <div class="flex justify-between font-bold text-sm border-t border-slate-200 pt-1.5 text-slate-900">
+                    <span>Total:</span>
+                    <span id="total">LKR 0.00</span>
+                </div>
+            </div>
+
+            <button onclick="generateQuotation()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-2 rounded-lg mt-3 font-bold shadow text-xs transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Instant Quotation
+            </button>
+
+            <button onclick="sendToWhatsApp()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg mt-2 font-bold shadow text-xs transition flex items-center justify-center gap-1.5">
+                <i class="fa-brands fa-whatsapp text-sm"></i> Order via WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="glass-panel text-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative border border-white/30 max-h-[92vh] flex flex-col justify-between">
+            <button onclick="closeProductModal()" class="absolute top-3 right-4 text-slate-500 hover:text-black text-2xl font-bold z-20">&times;</button>
+            <div id="modal-product-content" class="flex flex-col gap-3.5 overflow-y-auto scrollable-gallery pr-1"></div>
+        </div>
+    </div>
+
+    <!-- Admin Settings GUI Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="glass-panel text-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-5 relative border border-white/30 text-xs">
+            <button onclick="closeSettingsModal()" class="absolute top-3 right-3 text-slate-500 hover:text-black font-bold">&times;</button>
+            <h3 class="text-sm font-bold mb-3 text-cyan-800 flex items-center gap-1.5"><i class="fa-solid fa-sliders"></i> Store Config (GUI)</h3>
+            
+            <label class="block font-bold mb-1">Store Name:</label>
+            <input type="text" id="setting-store-name" class="w-full border p-2 rounded mb-3 bg-white/70">
+
+            <label class="block font-bold mb-1">WhatsApp Number (e.g. 94763194865):</label>
+            <input type="text" id="setting-whatsapp" class="w-full border p-2 rounded mb-3 bg-white/70">
+
+            <label class="block font-bold mb-1">Categories (Comma separated):</label>
+            <input type="text" id="setting-categories" class="w-full border p-2 rounded mb-4 bg-white/70">
+
+            <button onclick="saveStoreSettings()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded font-bold shadow">Save Settings</button>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="glass-panel text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 relative border border-white/30">
+            <button onclick="closeAdminModal()" class="absolute top-3 right-3 text-slate-500 hover:text-black font-bold">&times;</button>
+            <div class="text-center mb-3">
+                <i class="fa-solid fa-lock text-2xl text-cyan-700 mb-1"></i>
+                <h3 class="text-base font-bold">Admin Portal</h3>
+            </div>
+            <input type="password" id="admin-pass" placeholder="Password (admin123)" class="w-full border border-slate-300 bg-white/60 p-2.5 rounded-lg mb-3 text-xs outline-none">
+            <button onclick="verifyAdmin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg font-bold text-xs transition">Login</button>
+        </div>
+    </div>
+
+    <!-- Add / Edit Product Modal (Admin) -->
+    <div id="add-product-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="glass-panel text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 relative border border-white/30">
+            <button onclick="closeAddProductModal()" class="absolute top-3 right-3 text-slate-500 hover:text-black font-bold">&times;</button>
+            <h3 id="product-modal-title" class="text-base font-bold mb-3 flex items-center gap-1.5"><i class="fa-solid fa-plus-circle text-emerald-600"></i> Product Manager</h3>
+            <input type="hidden" id="editing-product-id">
+            <input type="text" id="new-name" placeholder="Product Name" class="w-full border border-slate-300 bg-white/60 p-2.5 rounded-lg mb-2.5 text-xs outline-none">
+            <input type="number" id="new-price" placeholder="Price (LKR)" class="w-full border border-slate-300 bg-white/60 p-2.5 rounded-lg mb-2.5 text-xs outline-none">
+            <select id="new-category" class="w-full border border-slate-300 bg-white/60 p-2.5 rounded-lg mb-2.5 text-xs outline-none"></select>
+            <input type="text" id="new-image" placeholder="Image URL (Comma separated for multiple)" class="w-full border border-slate-300 bg-white/60 p-2.5 rounded-lg mb-3 text-xs outline-none">
+            <button onclick="saveProductGUI()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg font-bold text-xs transition">Save Product</button>
+        </div>
+    </div>
+
+    <!-- Quotation View Modal -->
+    <div id="quotation-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-xl p-6 relative max-h-[90vh] overflow-y-auto text-xs">
+            <button onclick="closeQuotation()" class="absolute top-3 right-3 text-slate-500 hover:text-black font-bold">&times;</button>
+            <div id="quotation-content">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-black text-blue-900" id="quote-store-name">MobileTech Store</h2>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-wider">Official Quotation</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-cyan-700" id="quote-id">Quote #QT-1001</p>
+                        <p class="text-[10px] text-slate-500" id="quote-date"></p>
+                    </div>
+                </div>
+                <table class="w-full text-left mb-4 border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 border-b text-[11px]">
+                            <th class="p-2">Item</th>
+                            <th class="p-2 text-center">Qty</th>
+                            <th class="p-2 text-right">Price</th>
+                            <th class="p-2 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quote-table-body"></tbody>
+                </table>
+                <div class="flex justify-end mb-4">
+                    <div class="w-1/2 space-y-1 text-right">
+                        <p class="flex justify-between"><span>Subtotal:</span> <span id="quote-subtotal">0.00</span></p>
+                        <p class="flex justify-between text-emerald-600"><span>Discount:</span> <span id="quote-discount">0.00</span></p>
+                        <p class="flex justify-between font-bold text-sm border-t pt-1.5 text-slate-900"><span>Grand Total:</span> <span id="quote-total">0.00</span></p>
+                    </div>
+                </div>
+                <div class="border-t pt-3 text-[10px] text-slate-500 flex justify-between items-center">
+                    <p>Valid for 14 days.</p>
+                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg font-bold transition"><i class="fa-solid fa-print"></i> Print / PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlist-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex justify-center items-center p-4 z-50">
+        <div class="glass-panel text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 relative border border-white/30 text-xs">
+            <button onclick="closeWishlistModal()" class="absolute top-3 right-3 text-slate-500 hover:text-black font-bold">&times;</button>
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-1.5 text-pink-600"><i class="fa-solid fa-heart"></i> Saved Favorites</h3>
+            <div id="wishlist-items" class="space-y-2.5 max-h-48 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Core JavaScript Logic -->
+    <script>
+        const DEFAULT_PRODUCTS = [
+            { id: 1, name: "Fast Charging Cable Type-C", price: 1200, category: "Cables", rating: 4.8, images: ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600"] },
+            { id: 2, name: "20W Power Adapter Charger", price: 3500, category: "Chargers", rating: 4.9, images: ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600"] },
+            { id: 3, name: "Shockproof Clear Back Cover", price: 1500, category: "Covers", rating: 4.5, images: ["https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600"] },
+            { id: 4, name: "Wireless Bluetooth Earbuds", price: 6500, category: "Headsets", rating: 4.7, images: ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600"] }
+        ];
+
+        let storeConfig = JSON.parse(localStorage.getItem('storeConfig')) || {
+            name: "MobileTech Store",
+            whatsapp: "94763194865",
+            categories: ["All", "Cables", "Chargers", "Covers", "Headsets", "Power Banks", "Accessories"]
+        };
+
+        let products = JSON.parse(localStorage.getItem('storeProducts')) || DEFAULT_PRODUCTS;
+        let cart = [];
+        let wishlist = [];
+        let activeCategory = 'All';
+        let isAdmin = false;
+        let currentZoomLevel = 1;
+        const ADMIN_SECRET_KEY = "admin123";
+
+        function initStore() {
+            document.getElementById('store-title-nav').innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i> ${storeConfig.name}`;
+            document.getElementById('store-title-banner').innerText = storeConfig.name;
+            renderCategories();
+            renderProducts();
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-buttons');
+            container.innerHTML = storeConfig.categories.map(cat => `
+                <button onclick="filterCategory('${cat}', this)" class="cat-btn ${cat === activeCategory ? 'bg-cyan-600 text-white font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 font-semibold'} px-3 py-1 rounded-lg text-xs border border-slate-800 shadow transition">${cat}</button>
+            `).join('');
+
+            const select = document.getElementById('new-category');
+            select.innerHTML = storeConfig.categories.filter(c => c !== 'All').map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+
+            let filtered = products.filter(p => {
+                const matchesCat = (activeCategory === 'All' || p.category === activeCategory);
+                const matchesSearch = p.name.toLowerCase().includes(searchVal);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<p class="col-span-3 text-center text-slate-400 py-8 text-xs">No products found.</p>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(p => {
+                let mainImg = Array.isArray(p.images) ? p.images[0] : (p.image || 'https://via.placeholder.com/300');
+                return `
+                <div class="glass-panel text-slate-900 p-3 rounded-xl shadow hover:shadow-lg transition border border-white/40 flex flex-col justify-between relative text-xs">
+                    <div>
+                        <button onclick="toggleWishlist(${p.id}); event.stopPropagation();" class="absolute top-3 right-3 bg-white/80 p-1.5 rounded-full text-pink-500 hover:bg-white transition shadow z-10">
+                            <i class="${wishlist.includes(p.id) ? 'fa-solid' : 'fa-regular'} fa-heart text-[10px]"></i>
+                        </button>
+                        <div onclick="openProductModal(${p.id})" class="cursor-pointer">
+                            <img src="${mainImg}" alt="${escapeHtml(p.name)}" class="w-full h-28 object-cover rounded-lg mb-2.5 border border-slate-200">
+                            <span class="bg-cyan-100 text-cyan-900 text-[9px] font-bold px-2 py-0.5 rounded">${p.category}</span>
+                            <h3 class="font-bold text-xs text-slate-900 mt-1 mb-1 line-clamp-2">${escapeHtml(p.name)}</h3>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-blue-900 font-extrabold text-xs">LKR ${p.price.toLocaleString()}</span>
+                            <span class="text-[10px] text-amber-600 font-bold"><i class="fa-solid fa-star"></i> ${p.rating || 4.5}</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="addToCart(${p.id})" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded-lg text-[11px] font-semibold transition shadow">
+                                <i class="fa-solid fa-cart-plus"></i> Add
+                            </button>
+                            ${isAdmin ? `
+                                <button onclick="editProductGUI(${p.id})" class="bg-amber-500 text-white px-2 py-1.5 rounded-lg text-[11px]"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteProduct(${p.id})" class="bg-red-500 text-white px-2 py-1.5 rounded-lg text-[11px]"><i class="fa-solid fa-trash"></i></button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;}).join('');
+
+            const adminBtn = document.getElementById('admin-action-btn');
+            if (isAdmin) {
+                adminBtn.innerHTML = `<button onclick="openAddProductModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1"><i class="fa-solid fa-plus"></i> Add Product</button>`;
+                document.getElementById('admin-settings-badge').classList.remove('hidden');
+            } else {
+                adminBtn.innerHTML = '';
+                document.getElementById('admin-settings-badge').classList.add('hidden');
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('storeProducts', JSON.stringify(products));
+            localStorage.setItem('storeConfig', JSON.stringify(storeConfig));
+        }
+
+        function saveStoreSettings() {
+            storeConfig.name = document.getElementById('setting-store-name').value.trim() || storeConfig.name;
+            storeConfig.whatsapp = document.getElementById('setting-whatsapp').value.trim() || storeConfig.whatsapp;
+            let cats = document.getElementById('setting-categories').value.split(',').map(s => s.trim()).filter(Boolean);
+            if (!cats.includes('All')) cats.unshift('All');
+            storeConfig.categories = cats;
+            saveData();
+            initStore();
+            closeSettingsModal();
+            alert("Store Settings Saved!");
+        }
+
+        function openSettingsModal() {
+            document.getElementById('setting-store-name').value = storeConfig.name;
+            document.getElementById('setting-whatsapp').value = storeConfig.whatsapp;
+            document.getElementById('setting-categories').value = storeConfig.categories.join(', ');
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+        function editProductGUI(id) {
+            const p = products.find(prod => prod.id === id);
+            if (!p) return;
+            document.getElementById('editing-product-id').value = p.id;
+            document.getElementById('new-name').value = p.name;
+            document.getElementById('new-price').value = p.price;
+            document.getElementById('new-category').value = p.category;
+            document.getElementById('new-image').value = Array.isArray(p.images) ? p.images.join(', ') : p.image;
+            document.getElementById('add-product-modal').classList.remove('hidden');
+        }
+
+        function saveProductGUI() {
+            if(!isAdmin) return alert("Unauthorized!");
+            const id = document.getElementById('editing-product-id').value;
+            const name = document.getElementById('new-name').value.trim();
+            const price = parseFloat(document.getElementById('new-price').value);
+            const category = document.getElementById('new-category').value.trim();
+            let imgInput = document.getElementById('new-image').value.trim();
+
+            if (!name || isNaN(price) || !category) return alert("Fill required fields!");
+
+            let imagesArr = imgInput ? imgInput.split(',').map(s => s.trim()) : ['https://via.placeholder.com/300'];
+
+            if (id) {
+                let p = products.find(prod => prod.id == id);
+                if (p) { p.name = name; p.price = price; p.category = category; p.images = imagesArr; }
+            } else {
+                products.push({ id: Date.now(), name, price, category, rating: 5.0, images: imagesArr });
+            }
+
+            saveData();
+            closeAddProductModal();
+            renderProducts();
+        }
+
+        function deleteProduct(id) {
+            if (!isAdmin) return;
+            if (confirm("Delete this product?")) {
+                products = products.filter(p => p.id !== id);
+                saveData();
+                renderProducts();
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function filterCategory(cat, btnElement) {
+            activeCategory = cat;
+            renderCategories();
+            renderProducts();
+        }
+
+        function filterProducts() { renderProducts(); }
+
+        function openProductModal(id) {
+            const p = products.find(prod => prod.id === id);
+            if (!p) return;
+            currentZoomLevel = 1;
+            let imgList = Array.isArray(p.images) ? p.images : [p.image || 'https://via.placeholder.com/300'];
+            
+            let imagesHtml = imgList.map(img => `
+                <div class="w-full min-h-[360px] md:min-h-[400px] flex items-center justify-center overflow-auto scrollable-gallery border border-slate-200 rounded-xl bg-slate-100 p-4 relative flex-shrink-0">
+                    <img src="${img}" class="zoom-img-container object-contain max-h-[380px] rounded-lg shadow-sm" style="transform: scale(1);">
+                </div>
+            `).join('');
+
+            document.getElementById('modal-product-content').innerHTML = `
+                <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded-lg border border-slate-200 text-xs">
+                    <span class="font-bold text-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-plus text-cyan-600"></i> Zoom & View:</span>
+                    <div class="flex gap-1.5">
+                        <button onclick="changeZoom(0.25)" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded font-bold shadow transition"><i class="fa-solid fa-plus"></i> Zoom In</button>
+                        <button onclick="changeZoom(-0.25)" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded font-bold shadow transition"><i class="fa-solid fa-minus"></i> Zoom Out</button>
+                        <button onclick="resetZoom()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1 rounded font-semibold transition">Reset</button>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-center overflow-x-auto overflow-y-auto max-h-[420px] p-2 scrollable-gallery w-full border border-slate-200 rounded-xl bg-slate-50">
+                    ${imagesHtml}
+                </div>
+                <span class="bg-cyan-100 text-cyan-900 text-[10px] font-bold px-2.5 py-0.5 rounded w-fit">${p.category}</span>
+                <h2 class="text-base font-bold text-slate-900">${escapeHtml(p.name)}</h2>
+                <div class="flex justify-between items-center mt-1">
+                    <span class="text-blue-900 font-extrabold text-base">LKR ${p.price.toLocaleString()}</span>
+                    <button onclick="addToCart(${p.id}); closeProductModal();" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow">Add to Cart</button>
+                </div>
+            `;
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function changeZoom(delta) {
+            currentZoomLevel = Math.max(0.5, Math.min(3.5, currentZoomLevel + delta));
+            document.querySelectorAll('.zoom-img-container').forEach(img => img.style.transform = `scale(${currentZoomLevel})`);
+        }
+        function resetZoom() {
+            currentZoomLevel = 1;
+            document.querySelectorAll('.zoom-img-container').forEach(img => img.style.transform = `scale(1)`);
+        }
+        function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+        function toggleWishlist(id) {
+            if (wishlist.includes(id)) wishlist = wishlist.filter(wId => wId !== id);
+            else wishlist.push(id);
+            document.getElementById('wishlist-count').innerText = wishlist.length;
+            renderProducts();
+        }
+
+        function openWishlistModal() {
+            const container = document.getElementById('wishlist-items');
+            const savedProds = products.filter(p => wishlist.includes(p.id));
+            if (savedProds.length === 0) container.innerHTML = `<p class="text-slate-400 text-center py-3">No items in wishlist</p>`;
+            else {
+                container.innerHTML = savedProds.map(p => `
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div>
+                            <h4 class="font-bold text-xs">${escapeHtml(p.name)}</h4>
+                            <p class="text-[11px] text-blue-900 font-bold">LKR ${p.price.toLocaleString()}</p>
+                        </div>
+                        <button onclick="addToCart(${p.id}); closeWishlistModal();" class="bg-blue-600 text-white px-2.5 py-1 rounded text-[10px]">Add</button>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('wishlist-modal').classList.remove('hidden');
+        }
+        function closeWishlistModal() { document.getElementById('wishlist-modal').classList.add('hidden'); }
+
+        function addToCart(id) {
+            const item = cart.find(i => i.id === id);
+            if (item) item.qty++;
+            else {
+                const prod = products.find(p => p.id === id);
+                cart.push({ ...prod, qty: 1 });
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            const container = document.getElementById('cart-items');
+            document.getElementById('cart-count').innerText = cart.reduce((a, c) => a + c.qty, 0);
+
+            if (cart.length === 0) container.innerHTML = '<p class="text-slate-400 text-center py-3">Your cart is empty</p>';
+            else {
+                container.innerHTML = cart.map(i => `
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                            <h4 class="font-semibold text-slate-800">${escapeHtml(i.name)}</h4>
+                            <p class="text-[10px] text-slate-500">LKR ${i.price.toLocaleString()} x ${i.qty}</p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="changeQty(${i.id}, -1)" class="bg-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">-</button>
+                            <span class="font-semibold px-1">${i.qty}</span>
+                            <button onclick="changeQty(${i.id}, 1)" class="bg-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const sub = cart.reduce((a, c) => a + (c.price * c.qty), 0);
+            const disc = sub > 5000 ? sub * 0.05 : 0;
+            const tot = sub - disc;
+
+            document.getElementById('subtotal').innerText = `LKR ${sub.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('discount').innerText = `- LKR ${disc.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('total').innerText = `LKR ${tot.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+            }
+            updateCart();
+        }
+
+        function openAdminLogin() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass').value = ''; }
+        
+        function verifyAdmin() {
+            if (document.getElementById('admin-pass').value === ADMIN_SECRET_KEY) {
+                isAdmin = true;
+                closeAdminModal();
+                alert("Admin Authenticated!");
+                renderProducts();
+            } else alert("Incorrect Password!");
+        }
+
+        function openAddProductModal() {
+            document.getElementById('editing-product-id').value = '';
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-price').value = '';
+            document.getElementById('new-image').value = '';
+            document.getElementById('add-product-modal').classList.remove('hidden');
+        }
+        function closeAddProductModal() { document.getElementById('add-product-modal').classList.add('hidden'); }
+
+        function generateQuotation() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            const sub = cart.reduce((a, c) => a + (c.price * c.qty), 0);
+            const disc = sub > 5000 ? sub * 0.05 : 0;
+            const tot = sub - disc;
+
+            document.getElementById('quote-store-name').innerText = storeConfig.name;
+            document.getElementById('quote-id').innerText = `Quote #QT-${Math.floor(1000 + Math.random() * 9000)}`;
+            document.getElementById('quote-date').innerText = `Date: ${new Date().toLocaleDateString()}`;
+
+            document.getElementById('quote-table-body').innerHTML = cart.map(i => `
+                <tr class="border-b border-slate-100">
+                    <td class="p-2">${escapeHtml(i.name)}</td>
+                    <td class="p-2 text-center">${i.qty}</td>
+                    <td class="p-2 text-right">LKR ${i.price.toLocaleString()}</td>
+                    <td class="p-2 text-right">LKR ${(i.price * i.qty).toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('quote-subtotal').innerText = `LKR ${sub.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('quote-discount').innerText = `- LKR ${disc.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('quote-total').innerText = `LKR ${tot.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+            document.getElementById('quotation-modal').classList.remove('hidden');
+        }
+
+        function sendToWhatsApp() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            let msg = `Hello ${storeConfig.name}, I would like to place an order:\n\n`;
+            cart.forEach(i => {
+                let prodLink = window.location.href.split('#')[0] + `#prod-${i.id}`;
+                msg += `📦 *${i.name}*\n- Qty: ${i.qty}\n- Price: LKR ${(i.price * i.qty).toLocaleString()}\n- Link: ${prodLink}\n\n`;
+            });
+            const sub = cart.reduce((a, c) => a + (c.price * c.qty), 0);
+            const disc = sub > 5000 ? sub * 0.05 : 0;
+            const tot = sub - disc;
+            msg += `💰 *Total Amount: LKR ${tot.toLocaleString()}*`;
+            
+            window.open(`https://wa.me/${storeConfig.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function closeQuotation() { document.getElementById('quotation-modal').classList.add('hidden'); }
+
+        initStore();
+    </script>
+</body>
+</html>
